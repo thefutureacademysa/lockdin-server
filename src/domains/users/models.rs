@@ -1,0 +1,40 @@
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct User {
+    pub id: String,
+    pub full_name: String,
+    pub school_name: String,
+    pub grade: String,
+    pub phone_number: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+    pub is_verified: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl User {
+    pub fn new(
+        full_name: String,
+        school_name: String,
+        grade: String,
+        phone_number: String,
+    ) -> Self {
+        // generate id
+        let id = uuid::Uuid::now_v7().to_string();
+        Self {
+            id,
+            full_name,
+            school_name,
+            grade,
+            phone_number,
+            avatar_url: None,
+            is_verified: false,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+}
