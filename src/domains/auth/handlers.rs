@@ -1,5 +1,7 @@
 use actix_web::{post, web, HttpRequest, HttpResponse};
 use crate::config::state::AppState;
+use crate::domains::auth::error::AppError;
+use crate::domains::auth::models::{LoginRequest, SignupRequest, VerifyOtpRequest};
 
 // signup
 // login
@@ -7,26 +9,58 @@ use crate::config::state::AppState;
 #[post("/signup")]
 pub async fn signup(
     state: web::Data<AppState>,
-    // req: web::Json<SignupRequest>,
+    payload: web::Json<SignupRequest>,
     req: HttpRequest
 ) -> actix_web::Result<HttpResponse> {
-    Ok(HttpResponse::Ok().finish())
+    let user_service = state.user_service.clone();
+    match state.auth_service.signup(user_service, payload.into_inner()).await {
+        Ok(otp) => {
+            log::info!("OTP Issued: {}", otp.code);
+            Ok(HttpResponse::Ok().json(otp))
+
+        }
+        Err(e) => {
+            log::error!("Error: {}", e);
+            Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+        }
+    }
 }
 
 #[post("/login")]
 pub async fn login(
     state: web::Data<AppState>,
-    // req: web::Json<LoginRequest>,
+    payload: web::Json<LoginRequest>,
     req: HttpRequest
 ) -> actix_web::Result<HttpResponse> {
-    Ok(HttpResponse::Ok().finish())
+    let user_service = state.user_service.clone();
+    match state.auth_service.login(user_service, payload.into_inner()).await {
+        Ok(otp) => {
+            log::info!("OTP Issued: {}", otp.code);
+            Ok(HttpResponse::Ok().json(otp))
+
+        }
+        Err(e) => {
+            log::error!("Error: {}", e);
+            Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+        }
+    }
 }
 
 #[post("/verify-otp")]
 pub async fn verify_otp(
     state: web::Data<AppState>,
-    // req: web::Json<VerifyOtpRequest>,
+    payload: web::Json<VerifyOtpRequest>,
     req: HttpRequest
 ) -> actix_web::Result<HttpResponse> {
-    Ok(HttpResponse::Ok().finish())
+    match state.auth_service.verify_otp(payload.into_inner()).await {
+        Ok(otp) => {
+            log::info!("OTP {otp}");
+            Ok(HttpResponse::Ok().json(otp))
+
+        }
+        Err(e) => {
+            log::error!("Error: {}", e);
+            Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+        }
+    }
 }

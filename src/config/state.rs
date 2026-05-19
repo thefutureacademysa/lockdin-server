@@ -5,6 +5,7 @@ use crate::infra::database::{init_pool, run_migrations};
 use actix_web::web::Data;
 use sqlx::PgPool;
 use std::sync::Arc;
+use crate::domains::auth::implementation::postgres_repo::OtpPostgresRepo;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -14,7 +15,11 @@ pub struct AppState {
 
 pub fn app_state(pg_pool: PgPool) -> AppState {
     AppState {
-        auth_service: Data::new(AuthService {}),
+        auth_service: Data::new(AuthService {
+            repo: Arc::new(OtpPostgresRepo {
+                pool: pg_pool.clone(),
+            }),
+        }),
         // init user service
         user_service: Data::new(UserService {
             repo: Arc::new(UserPostgresRepo {
