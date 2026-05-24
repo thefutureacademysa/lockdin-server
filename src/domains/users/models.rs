@@ -9,7 +9,9 @@ pub struct User {
     pub full_name: String,
     pub school_name: String,
     pub grade: String,
-    pub phone_number: String,
+    pub email: String,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub phone_number: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
     pub is_verified: bool,
@@ -22,7 +24,7 @@ impl User {
         full_name: String,
         school_name: String,
         grade: String,
-        phone_number: String,
+        email: String,
     ) -> Self {
         // generate id
         let id = uuid::Uuid::now_v7().to_string();
@@ -31,7 +33,7 @@ impl User {
             full_name,
             school_name,
             grade,
-            phone_number,
+            email,
             avatar_url: None,
             is_verified: false,
             created_at: Utc::now(),

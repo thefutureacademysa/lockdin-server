@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -8,24 +8,25 @@ pub struct SignupRequest {
     pub full_name: String,
     pub school_name: String,
     pub grade: String,
-    pub phone_number: String,
+    pub email: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginRequest {
-    pub phone_number: String,
+    pub email: String,
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyOtpRequest {
-    pub phone_number: String,
+    pub email: String,
     pub code: String
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct OtpResponse {
+    pub email: String,
     pub code: String,
     pub expires_at: DateTime<Local>,
     pub created_at: DateTime<Local>,

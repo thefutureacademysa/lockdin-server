@@ -1,6 +1,5 @@
-use actix_web::{post, web, HttpRequest, HttpResponse};
+use actix_web::{post, web, HttpResponse};
 use crate::config::state::AppState;
-use crate::domains::auth::error::AppError;
 use crate::domains::auth::models::{LoginRequest, SignupRequest, VerifyOtpRequest};
 
 // signup
@@ -10,7 +9,6 @@ use crate::domains::auth::models::{LoginRequest, SignupRequest, VerifyOtpRequest
 pub async fn signup(
     state: web::Data<AppState>,
     payload: web::Json<SignupRequest>,
-    req: HttpRequest
 ) -> actix_web::Result<HttpResponse> {
     let user_service = state.user_service.clone();
     match state.auth_service.signup(user_service, payload.into_inner()).await {
@@ -30,7 +28,6 @@ pub async fn signup(
 pub async fn login(
     state: web::Data<AppState>,
     payload: web::Json<LoginRequest>,
-    req: HttpRequest
 ) -> actix_web::Result<HttpResponse> {
     let user_service = state.user_service.clone();
     match state.auth_service.login(user_service, payload.into_inner()).await {
@@ -50,9 +47,9 @@ pub async fn login(
 pub async fn verify_otp(
     state: web::Data<AppState>,
     payload: web::Json<VerifyOtpRequest>,
-    req: HttpRequest
 ) -> actix_web::Result<HttpResponse> {
-    match state.auth_service.verify_otp(payload.into_inner()).await {
+    let user_service = state.user_service.clone();
+    match state.auth_service.verify_otp(user_service, payload.into_inner()).await {
         Ok(otp) => {
             log::info!("OTP {otp}");
             Ok(HttpResponse::Ok().json(otp))

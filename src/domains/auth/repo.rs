@@ -1,11 +1,11 @@
 use crate::domains::auth::models::OtpResponse;
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 
 #[async_trait::async_trait]
 pub trait OtpRepo {
     async fn store_otp(
         &self,
-        phone_number: &String,
+        email: &String,
         code: &String,
         expires_at: &DateTime<Local>,
         now: &DateTime<Local>,
@@ -14,12 +14,12 @@ pub trait OtpRepo {
     async fn get_otp(
         &self,
         code: &String,
-        phone_number: &String,
+        email: &String,
     ) -> sqlx::Result<Option<OtpResponse>, sqlx::Error>;
 
     async fn invalidate_otp(
         &self,
         code: &String,
-        phone_number: &String,
+        email: &String,
     ) -> sqlx::Result<u64, sqlx::Error>;
 }
