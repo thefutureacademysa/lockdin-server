@@ -1,6 +1,7 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use crate::domains::users::models::User;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -26,8 +27,33 @@ pub struct VerifyOtpRequest {
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct OtpResponse {
-    pub email: String,
+    pub user_id: String,
     pub code: String,
-    pub expires_at: DateTime<Local>,
-    pub created_at: DateTime<Local>,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct RefreshToken {
+    pub id: String,
+    pub user_id: String,
+    pub token: String,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub revoked: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub iat: i64,
+    pub exp: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthTokensResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+    pub user: User,
 }

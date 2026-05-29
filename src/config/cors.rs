@@ -5,7 +5,8 @@ use crate::infra::env_vars::EnvironmentVars;
 pub fn build_cors() -> Cors {
     let ev = EnvironmentVars::init();
     Cors::default()
-        .allowed_origin(&ev.frontend_origin)
+        // todo: remove this
+        .allow_any_origin()
         .allowed_methods(["GET", "POST", "DELETE"])
         .allowed_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
         .supports_credentials()

@@ -1,3 +1,5 @@
+use crate::domains::auth::repository::refresh_tokens::postgres_repo::RefreshTokenPostgresRepo;
+use crate::domains::auth::repository::verification_codes::postgres_repo::OtpPostgresRepo;
 use crate::domains::auth::service::AuthService;
 use crate::domains::users::implementation::postgres_repo::UserPostgresRepo;
 use crate::domains::users::service::UserService;
@@ -5,7 +7,6 @@ use crate::infra::database::{init_pool, run_migrations};
 use actix_web::web::Data;
 use sqlx::PgPool;
 use std::sync::Arc;
-use crate::domains::auth::implementation::postgres_repo::OtpPostgresRepo;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -14,9 +15,16 @@ pub struct AppState {
 }
 
 pub fn app_state(pg_pool: PgPool) -> AppState {
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET environment variable is required");
     AppState {
         auth_service: Data::new(AuthService {
-            repo: Arc::new(OtpPostgresRepo {
+            jwt_secret,
+            rt_repo: Arc::new(
+                (RefreshTokenPostgresRepo {
+                    pool: pg_pool.clone(),
+                }),
+            ),
+            otp_repo: Arc::new(OtpPostgresRepo {
                 pool: pg_pool.clone(),
             }),
         }),

@@ -54,12 +54,10 @@ impl UserRepository for UserPostgresRepo {
         Ok(user)
     }
 
-    async fn verify_user(&self, email: &String) -> sqlx::Result<u64, Error> {
-        let results = sqlx::query("UPDATE users SET is_verified=true WHERE email=$1 RETURNING *")
-            .bind(email)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(results.rows_affected())
+    async fn verify_user(&self, user_id: &String) -> sqlx::Result<User, Error> {
+        sqlx::query_as("UPDATE users SET is_verified=true WHERE id=$1 RETURNING *")
+            .bind(user_id)
+            .fetch_one(&self.pool)
+            .await
     }
 }

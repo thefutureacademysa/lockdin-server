@@ -50,10 +50,9 @@ pub async fn verify_otp(
 ) -> actix_web::Result<HttpResponse> {
     let user_service = state.user_service.clone();
     match state.auth_service.verify_otp(user_service, payload.into_inner()).await {
-        Ok(otp) => {
-            log::info!("OTP {otp}");
-            Ok(HttpResponse::Ok().json(otp))
-
+        Ok(tokens) => {
+            log::info!("OTP verified successfully. Access token and refresh token issued.");
+            Ok(HttpResponse::Ok().json(tokens))
         }
         Err(e) => {
             log::error!("Error: {}", e);

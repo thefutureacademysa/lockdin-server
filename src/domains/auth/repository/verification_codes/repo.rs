@@ -14,12 +14,12 @@ pub trait OtpRepo {
     async fn get_otp(
         &self,
         code: &String,
-        email: &String,
+        user_id: &String,
     ) -> sqlx::Result<Option<OtpResponse>, sqlx::Error>;
 
     async fn invalidate_otp(
         &self,
         code: &String,
-        email: &String,
+        user_id: &String,
     ) -> sqlx::Result<u64, sqlx::Error>;
 }

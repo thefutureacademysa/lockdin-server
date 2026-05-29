@@ -1,5 +1,5 @@
 use crate::domains::auth::models::OtpResponse;
-use crate::domains::auth::repo::OtpRepo;
+use crate::domains::auth::repository::verification_codes::repo::OtpRepo;
 use chrono::{DateTime, Local};
 use sqlx::Error;
 
@@ -11,6 +11,7 @@ pub struct OtpPostgresRepo {
 impl OtpRepo for OtpPostgresRepo {
     async fn store_otp(
         &self,
+        // todo: update to user_id
         email: &String,
         code: &String,
         expires_at: &DateTime<Local>,
@@ -18,9 +19,9 @@ impl OtpRepo for OtpPostgresRepo {
     ) -> sqlx::Result<OtpResponse, Error> {
         let otp = sqlx::query_as(
             "
-        INSERT INTO otps (email, code, expires_at, created_at)
+        INSERT INTO otps (user_id, code, expires_at, created_at)
         VALUES ($1, $2, $3, $4)
-        ON CONFLICT (email)
+        ON CONFLICT (user_id)
         DO UPDATE SET code = $2, expires_at = $3, created_at = $4
         RETURNING *
         ",
@@ -38,15 +39,15 @@ impl OtpRepo for OtpPostgresRepo {
     async fn get_otp(
         &self,
         code: &String,
-        email: &String,
+        user_id: &String,
     ) -> sqlx::Result<Option<OtpResponse>, Error> {
         let otp = sqlx::query_as(
             "
-        SELECT * FROM otps WHERE code = $1 AND email = $2 AND expires_at > NOW()
+        SELECT * FROM otps WHERE code = $1 AND user_id = $2 AND expires_at > NOW()
         ",
         )
         .bind(code)
-        .bind(email)
+        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?;
 
@@ -56,15 +57,15 @@ impl OtpRepo for OtpPostgresRepo {
     async fn invalidate_otp(
         &self,
         code: &String,
-        email: &String,
+        user_id: &String,
     ) -> sqlx::Result<u64, Error> {
         let otp = sqlx::query(
             "
-        DELETE FROM otps WHERE code = $1 AND email = $2
+        DELETE FROM otps WHERE code = $1 AND user_id = $2
         ",
         )
             .bind(code)
-            .bind(email)
+            .bind(user_id)
             .execute(&self.pool)
             .await?;
 

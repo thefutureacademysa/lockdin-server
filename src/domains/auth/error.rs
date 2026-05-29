@@ -7,6 +7,7 @@ pub enum AppError {
     UserAlreadyExists,
     DatabaseError(sqlx::Error),
     InternalServerError(String),
+    TokenGenerationError(String),
 }
 
 #[derive(Serialize)]
@@ -20,6 +21,7 @@ impl fmt::Display for AppError {
             AppError::UserAlreadyExists => write!(f, "User with this phone number already exists"),
             AppError::DatabaseError(err) => write!(f, "Database error: {}", err),
             AppError::InternalServerError(msg) => write!(f, "Internal server error: {}", msg),
+            AppError::TokenGenerationError(msg) => write!(f, "Token generation error: {}", msg),
         }
     }
 }
@@ -30,6 +32,7 @@ impl ResponseError for AppError {
             AppError::UserAlreadyExists => StatusCode::CONFLICT,
             AppError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::TokenGenerationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -47,6 +50,9 @@ impl ResponseError for AppError {
                 HttpResponse::InternalServerError().json(response)
             }
             AppError::InternalServerError(_) => {
+                HttpResponse::InternalServerError().json(response)
+            }
+            AppError::TokenGenerationError(_) => {
                 HttpResponse::InternalServerError().json(response)
             }
         }
