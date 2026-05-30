@@ -18,7 +18,7 @@ struct ErrorResponse {
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AppError::UserAlreadyExists => write!(f, "User with this phone number already exists"),
+            AppError::UserAlreadyExists => write!(f, "User with this email already exists"),
             AppError::DatabaseError(err) => write!(f, "Database error: {}", err),
             AppError::InternalServerError(msg) => write!(f, "Internal server error: {}", msg),
             AppError::TokenGenerationError(msg) => write!(f, "Token generation error: {}", msg),

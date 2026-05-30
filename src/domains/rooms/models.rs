@@ -1,14 +1,40 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Room {
     pub id: String,
     pub name: String,
     pub subject: String,
-    pub grade: String,
+    pub grade: i32,
     pub category: String,
     pub participant_count: i32,
     pub is_live: bool,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
+}
+
+pub enum SubjectCategory {
+    STEM,
+    HUMANITIES,
+    COMMERCE,
+}
+
+impl SubjectCategory {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "stem" => Some(SubjectCategory::STEM),
+            "humanities" => Some(SubjectCategory::HUMANITIES),
+            "commerce" => Some(SubjectCategory::COMMERCE),
+            _ => None,
+        }
+    }
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SubjectCategory::STEM => "STEM",
+            SubjectCategory::HUMANITIES => "Humanities",
+            SubjectCategory::COMMERCE => "Commerce",
+        }
+    }
 }

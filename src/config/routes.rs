@@ -1,11 +1,16 @@
-use actix_web::web;
 use crate::domains::auth::handlers::{login, signup, verify_otp};
+use crate::domains::rooms::handlers::get_all_rooms;
+use actix_web::web;
 
-pub fn configure(cfg: &mut web::ServiceConfig) {   
+pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/api/v1/auth")
-            .service(signup)
-            .service(login)
-            .service(verify_otp)
+        web::scope("/api/v1")
+            .service(
+                web::scope("/auth")
+                    .service(signup)
+                    .service(login)
+                    .service(verify_otp),
+            )
+            .service(web::scope("/rooms").service(get_all_rooms)),
     );
 }
