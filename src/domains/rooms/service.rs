@@ -8,13 +8,14 @@ pub struct RoomsService {
 }
 
 impl RoomsService {
-    pub async fn get_all_rooms(
+    pub async fn get_rooms(
         &self,
+        search: Option<String>,
         grade: Option<i32>,
         category: Option<String>,
     ) -> Result<Vec<Room>, Error> {
         let category = SubjectCategory::from_str(category.as_deref().unwrap_or(""));
-        match self.repo.get_all_rooms(grade.clone(), category).await {
+        match self.repo.get_all_rooms(search, grade, category).await {
             Ok(rooms) => Ok(rooms),
             Err(e) => {
                 log::error!("Error getting all rooms: {}", e);

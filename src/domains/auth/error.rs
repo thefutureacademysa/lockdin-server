@@ -8,6 +8,10 @@ pub enum AppError {
     DatabaseError(sqlx::Error),
     InternalServerError(String),
     TokenGenerationError(String),
+    TokenExpired,
+    InvalidToken,
+    TokenNotFound,
+    AuthorizationHeaderNotFound,
 }
 
 #[derive(Serialize)]
@@ -22,6 +26,10 @@ impl fmt::Display for AppError {
             AppError::DatabaseError(err) => write!(f, "Database error: {}", err),
             AppError::InternalServerError(msg) => write!(f, "Internal server error: {}", msg),
             AppError::TokenGenerationError(msg) => write!(f, "Token generation error: {}", msg),
+            AppError::TokenExpired => write!(f, "Token has expired"),
+            AppError::InvalidToken => write!(f, "Invalid token"),
+            AppError::TokenNotFound => write!(f, "Token not found"),
+            AppError::AuthorizationHeaderNotFound => write!(f, "Authorization header not found"),
         }
     }
 }
@@ -33,6 +41,10 @@ impl ResponseError for AppError {
             AppError::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::TokenGenerationError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::TokenExpired => StatusCode::UNAUTHORIZED,
+            AppError::InvalidToken => StatusCode::UNAUTHORIZED,
+            AppError::TokenNotFound => StatusCode::UNAUTHORIZED,
+            AppError::AuthorizationHeaderNotFound => StatusCode::UNAUTHORIZED,
         }
     }
 
@@ -54,6 +66,18 @@ impl ResponseError for AppError {
             }
             AppError::TokenGenerationError(_) => {
                 HttpResponse::InternalServerError().json(response)
+            }
+            AppError::TokenExpired => {
+                HttpResponse::Unauthorized().json(response)
+            }
+            AppError::InvalidToken => {
+                HttpResponse::Unauthorized().json(response)
+            }
+            AppError::TokenNotFound => {
+                HttpResponse::Unauthorized().json(response)
+            }
+            AppError::AuthorizationHeaderNotFound => {
+                HttpResponse::Unauthorized().json(response)
             }
         }
     }

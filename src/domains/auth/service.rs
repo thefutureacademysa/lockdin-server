@@ -20,25 +20,7 @@ pub struct AuthService {
 }
 
 impl AuthService {
-    pub fn generate_access_token(&self, user_id: &str) -> Result<String, AppError> {
-        let now = Utc::now().timestamp();
-        let expires_at = now + 3600; // 60 minutes from now
-
-        let claims = Claims {
-            sub: user_id.to_string(),
-            iat: now,
-            exp: expires_at,
-        };
-
-        let header = Header::new(Algorithm::HS256);
-        let encoding_key = EncodingKey::from_secret(self.jwt_secret.as_bytes());
-
-        match encode(&header, &claims, &encoding_key) {
-            Ok(token) => Ok(token),
-            Err(e) => Err(AppError::TokenGenerationError(e.to_string())),
-        }
-    }
-
+    // Authentication
     pub async fn signup(&self, user_service: Data<UserService>, payload: SignupRequest) -> Result<OtpResponse, Error> {
         // Insert new user into database
         let user = User::new(payload.clone().full_name, payload.school_name, payload.grade, payload.email);
@@ -78,6 +60,25 @@ impl AuthService {
         }
     }
 
+    // Auth Tokens
+    pub fn generate_access_token(&self, user_id: &str) -> Result<String, AppError> {
+        let now = Utc::now().timestamp();
+        let expires_at = now + 3600; // 60 minutes from now
+
+        let claims = Claims {
+            sub: user_id.to_string(),
+            iat: now,
+            exp: expires_at,
+        };
+
+        let header = Header::new(Algorithm::HS256);
+        let encoding_key = EncodingKey::from_secret(self.jwt_secret.as_bytes());
+
+        match encode(&header, &claims, &encoding_key) {
+            Ok(token) => Ok(token),
+            Err(e) => Err(AppError::TokenGenerationError(e.to_string())),
+        }
+    }
     async fn generate_refresh_token(&self, user_id: &String) -> Result<RefreshToken, Error> {
         let rng = rand::rng();
         let token: String = rng.sample_iter(&rand::distr::Alphanumeric)
@@ -110,7 +111,7 @@ impl AuthService {
         }
     }
 
-    /** Generate and Store verification code*/
+    // Verification Codes
     async fn generate_otp(&self, user_service: Data<UserService>,user_id: &String) -> Result<OtpResponse, Error> {
         // Generate secure 6-digit OTP
         let mut rng = rand::rng();

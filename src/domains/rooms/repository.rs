@@ -4,6 +4,7 @@ use crate::domains::rooms::models::{Room, SubjectCategory};
 pub trait RoomRepository {
     async fn get_all_rooms(
         &self,
+        search: Option<String>,
         grade: Option<i32>,
         category: Option<SubjectCategory>,
     ) -> sqlx::Result<Vec<Room>, sqlx::Error>;
