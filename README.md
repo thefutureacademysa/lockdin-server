@@ -1,5 +1,11 @@
 ﻿# Lockdin Backend
 
+ > *Pick a room. Lock in.*
+
+Lockdin is a free, mobile-first live study accountability platform built specifically for South African high school students. Students join live subject-specific rooms — Pure Mathematics Grade 11, Life Sciences Grade 12 — and study alongside peers in real time. No messages. No social feeds. No distractions.
+
+The mechanism is simple. Accountability through presence.
+
 ## Table of Contents
 
 - [Overview](#overview)
