@@ -1,4 +1,41 @@
-﻿# Lockding Backend
+﻿# Lockdin Backend
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Environment Variables](#environment-variables)
+  - [Running the Backend](#running-the-backend)
+  - [Running the Mobile App](#running-the-mobile-app)
+- [API Reference](#api-reference)
+- [Database](#database)
+- [Caching Strategy](#caching-strategy)
+- [Authentication](#authentication)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+
+---
+## Overview
+
+Lockdin addresses a documented crisis in South African secondary education — academic isolation. With only 11% of South African homes having a dedicated study space and 40% of learners dropping out between Grade 10 and Grade 12, the absence of peer study environments is a measurable contributor to underperformance.
+
+Lockdin applies the psychological principle of body doubling — the proven effect that working in the presence of others improves focus and task completion — to the context of the South African learner. Anywhere. Any device. Any time.
+
+**Key characteristics:**
+- CAPS and IEB aligned — Grade 8 through Grade 12
+- Zero private messaging by design
+- Avatar-based presence — student identity protected
+- Real-time participant counts per room
+- Subject category filtering — STEM, Commerce, Humanities, Creative Arts
+- Notification Engineering — personalised study reminders and exam countdown campaigns
+
+Lockdin is a subsidiary product of [The Future Academy](https://thefutureacademy.co.za) — an EdTech company providing affordable supplementary education to South African high school students.
+
+---
 
 ## Architecture
 
@@ -33,6 +70,7 @@ Lockdin follows a clean layered architecture across both the backend and mobile 
 4. Cache hit — returns immediately from Redis
 5. Cache miss — queries PostgreSQL, merges live participant counts from Redis, caches result with 60 second TTL, returns to client
 
+## Tech Stack
 
 ### Backend — Rust [Lockdin Server](https://github.com/thefutureacademysa/lockdin-server)
 | Technology | Purpose |
@@ -106,6 +144,17 @@ lockdin-api/
 └── Cargo.toml
 ```
 
+## Getting Started
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) 1.75+
+- [SQLx CLI](https://github.com/launchbadge/sqlx) — `cargo install sqlx-cli`
+- PostgreSQL 15+
+- Redis 7+
+
+---
+
 ### Environment Variables
 
 **Backend — create `.env` in the backend root:**
@@ -154,6 +203,14 @@ cargo run
 The API will be available at `http://127.0.0.1:8080`.
 
 ---
+
+## API Reference
+
+All protected endpoints require a valid JWT access token in the Authorization header:
+
+```
+Authorization: Bearer <access_token>
+```
 
 ### Authentication
 
