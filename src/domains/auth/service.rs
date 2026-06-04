@@ -1,17 +1,20 @@
-use std::io::{Error, ErrorKind};
 use crate::domains::auth::error::AppError;
-use crate::domains::auth::models::{AuthTokensResponse, Claims, LoginRequest, OtpResponse, RefreshToken, SignupRequest, VerifyOtpRequest};
-use crate::domains::auth::repository::verification_codes::repo::OtpRepo;
-use chrono::{DateTime, Duration, Local, Utc};
-use jsonwebtoken::{encode, Header, EncodingKey, Algorithm};
-use rand::Rng;
-use std::sync::Arc;
-use actix_web::web::Data;
+use crate::domains::auth::models::{
+    AuthTokensResponse, Claims, LoginRequest, OtpResponse, RefreshResponse, RefreshToken,
+    SignupRequest, VerifyOtpRequest,
+};
 use crate::domains::auth::repository::refresh_tokens::repo::RefreshTokenRepo;
+use crate::domains::auth::repository::verification_codes::repo::OtpRepo;
 use crate::domains::notifications::models::{EmailVerificationPayload, NotificationType};
 use crate::domains::notifications::service::NotificationService;
 use crate::domains::users::models::User;
 use crate::domains::users::service::UserService;
+use actix_web::web::Data;
+use chrono::{DateTime, Duration, Local, Utc};
+use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
+use rand::Rng;
+use std::io::{Error, ErrorKind};
+use std::sync::Arc;
 
 pub struct AuthService {
     pub jwt_secret: String,
@@ -21,38 +24,48 @@ pub struct AuthService {
 
 impl AuthService {
     // Authentication
-    pub async fn signup(&self, user_service: Data<UserService>, payload: SignupRequest) -> Result<OtpResponse, Error> {
+    pub async fn signup(
+        &self,
+        user_service: Data<UserService>,
+        payload: SignupRequest,
+    ) -> Result<OtpResponse, Error> {
         // Insert new user into database
-        let user = User::new(payload.clone().full_name, payload.school_name, payload.grade, payload.email);
+        let user = User::new(
+            payload.clone().full_name,
+            payload.clone().school_name,
+            payload.clone().grade,
+            payload.clone().email,
+        );
         match user_service.create_user(user).await {
-            Ok(user) => {
-                match self.generate_otp(user_service, &user.id).await {
-                    Ok(otp) => {
-                        Ok(otp)
-                    },
-                    Err(e) => Err(Error::from(e))
+            Ok(user) => match self.generate_otp(user_service, &user.id).await {
+                Ok(otp) => Ok(otp),
+                Err(e) => {
+                    log::error!("auth_service: otp generation failed - {}", e);
+                    Err(Error::from(e))
                 }
             },
             Err(e) => {
-                log::error!("Error: {}", e);
+                log::error!(
+                    "auth_service: failed to signup user, email:{}",
+                    payload.clone().email.clone()
+                );
                 Err(Error::other(e.to_string()))
             }
         }
-
-
-
-
     }
-    pub async fn login(&self, user_service: Data<UserService>, payload: LoginRequest) -> Result<OtpResponse, Error> {
+    pub async fn login(
+        &self,
+        user_service: Data<UserService>,
+        payload: LoginRequest,
+    ) -> Result<OtpResponse, Error> {
         match user_service.get_user_by_email(&payload.email).await {
-            Ok(user) => {
-                match self.generate_otp(user_service, &user.id).await {
-                    Ok(otp) => {
-                        Ok(otp)
-                    },
-                    Err(e) => Err(Error::from(e))
+            Ok(user) => match self.generate_otp(user_service, &user.id).await {
+                Ok(otp) => Ok(otp),
+                Err(e) => {
+                    log::error!("auth_service: otp generation failed - {}", e);
+                    Err(Error::from(e))
                 }
-            }
+            },
             Err(e) => {
                 log::error!("Error: {}", e);
                 Err(Error::from(e))
@@ -81,10 +94,11 @@ impl AuthService {
     }
     async fn generate_refresh_token(&self, user_id: &String) -> Result<RefreshToken, Error> {
         let rng = rand::rng();
-        let token: String = rng.sample_iter(&rand::distr::Alphanumeric)
-        .take(64)
-        .map(char::from)
-        .collect();
+        let token: String = rng
+            .sample_iter(&rand::distr::Alphanumeric)
+            .take(64)
+            .map(char::from)
+            .collect();
 
         let id = uuid::Uuid::now_v7().to_string();
         let now = Utc::now();
@@ -101,28 +115,46 @@ impl AuthService {
 
         match self.rt_repo.store_refresh_token(&token).await {
             Ok(refresh_token) => {
-                log::info!("Refresh token stored successfully: {:?}", refresh_token);
+                log::info!(
+                    "auth_service: refresh token generated and stored successfully for user:{}",
+                    user_id
+                );
                 Ok(refresh_token)
-            },
+            }
             Err(e) => {
-                log::error!("AuthService: Error storing refresh token: {}", e);
+                log::error!(
+                    "auth_service: failed to store refresh token. \n{}",
+                    e.to_string()
+                );
                 Err(Error::other(e.to_string()))
             }
         }
     }
 
     // Verification Codes
-    async fn generate_otp(&self, user_service: Data<UserService>,user_id: &String) -> Result<OtpResponse, Error> {
+    async fn generate_otp(
+        &self,
+        user_service: Data<UserService>,
+        user_id: &String,
+    ) -> Result<OtpResponse, Error> {
         // Generate secure 6-digit OTP
         let mut rng = rand::rng();
         let otp_code: String = format!("{:06}", rng.random_range(0..1_000_000));
-        let now =  Local::now();
+        let now = Local::now();
         let expires_at = now + Duration::minutes(10);
-        match self.otp_repo.store_otp(user_id, &otp_code, &expires_at, &now).await {
+        match self
+            .otp_repo
+            .store_otp(user_id, &otp_code, &expires_at, &now)
+            .await
+        {
             Ok(otp) => {
-                log::info!("Expiry time converted back to DateTime object {}", DateTime::<Local>::from(expires_at));
+                log::info!(
+                    "Expiry time converted back to DateTime object {}",
+                    DateTime::<Local>::from(expires_at)
+                );
                 log::info!("OTP stored successfully: {:?}", otp);
-                let email = std::env::var("EMAIL_FROM").expect("EMAIL_FROM environment variable is required");
+                let email = std::env::var("EMAIL_FROM")
+                    .expect("EMAIL_FROM environment variable is required");
                 let user = user_service.get_user(user_id).await?;
                 let payload = EmailVerificationPayload {
                     from: email,
@@ -130,9 +162,11 @@ impl AuthService {
                     code: otp.code.clone(),
                 };
                 let notification = NotificationType::EmailVerification(payload);
-                NotificationService::send_notification(notification).await.unwrap();
+                NotificationService::send_notification(notification)
+                    .await
+                    .unwrap();
                 Ok(otp)
-            },
+            }
             Err(e) => {
                 log::error!("AuthService: Error: {}", e);
                 Err(Error::other(e.to_string()))
@@ -140,71 +174,136 @@ impl AuthService {
         }
     }
 
-    pub async fn verify_otp(&self, user_service: Data<UserService>, payload: VerifyOtpRequest) -> Result<AuthTokensResponse, Error> {
+    pub async fn verify_otp(
+        &self,
+        user_service: Data<UserService>,
+        payload: VerifyOtpRequest,
+    ) -> Result<AuthTokensResponse, Error> {
         let user = user_service.get_user_by_email(&payload.email).await?;
-        log::info!("User found: {:?}", user.id);
         match self.otp_repo.get_otp(&payload.code, &user.id).await {
             Ok(otp) => {
                 match otp {
                     Some(otp) => {
-                        log::info!("OTP verified successfully: {:?}", otp);
-
+                        log::info!("auth_service: otp verification successful");
                         // Flip the is_verified status to true
-                        let updated = user_service.update_verify_status(&otp.user_id).await;
-
-                        match updated {
+                        match user_service.update_verify_status(&otp.user_id).await {
                             Ok(updated_user) => {
                                 // Generate an access token
                                 let access_token = self.generate_access_token(&otp.user_id)
-                                    .map_err(|e| Error::other(e.to_string()))?;
+                                    .map_err(|e| {
+                                        log::error!("auth_service: access token generation failed for user:{}.\n{}", &user.id, e.to_string());
+                                        Error::other(e.to_string())
+                                    })?;
 
                                 // Generate refresh token
-                                let refresh_token_data = self.generate_refresh_token(&otp.user_id).await?;
+                                let refresh_token_data = self
+                                    .generate_refresh_token(&otp.user_id)
+                                    .await
+                                    .map_err(|e| {
+                                        log::error!(
+                                            "auth_service: refresh token generation failed.\n{}",
+                                            e.to_string()
+                                        );
+                                        Error::other(e.to_string())
+                                    })?;
 
                                 // Invalidate OTP
                                 match self.invalidate_otp(payload).await {
                                     Ok(rows_affected) => {
-                                        log::info!("Invalidating OTP: {:?} rows affected.", rows_affected);
-                                    },
+                                        log::info!(
+                                            "auth_service: otp invalidation successful {:?} rows affected.",
+                                            rows_affected
+                                        );
+                                    }
                                     Err(e) => {
-                                        log::error!("Error: {}", e);
+                                        log::error!(
+                                            "auth_service: opt invalidation failed \n{}",
+                                            e
+                                        );
                                     }
                                 }
 
                                 Ok(AuthTokensResponse {
                                     access_token,
                                     refresh_token: refresh_token_data.token,
-                                    user: updated_user
+                                    user: updated_user,
                                 })
-                            },
+                            }
                             Err(e) => {
-                                log::error!("Error: {}", e);
-                                return Err(Error::other(e.to_string()));
+                                log::error!("auth_service: user verification failed. \n{}", e);
+                                Err(Error::other(e.to_string()))
                             }
                         }
-                    },
+                    }
                     None => {
-                        log::error!("OTP not found");
-                        Err(Error::new(ErrorKind::NotFound, "OTP not found or has expired."))
+                        log::error!(
+                            "auth_service: otp verification failed for user:{}",
+                            &user.id
+                        );
+                        Err(Error::new(
+                            ErrorKind::NotFound,
+                            "OTP not found or has expired.",
+                        ))
                     }
                 }
-            },
+            }
             Err(e) => {
-                log::error!("Error: {}", e);
+                log::error!(
+                    "auth_service: otp verification failed for user:{}\n{}",
+                    &user.id,
+                    e.to_string()
+                );
                 Err(Error::other(e.to_string()))
             }
         }
     }
 
     pub async fn invalidate_otp(&self, payload: VerifyOtpRequest) -> Result<u64, Error> {
-        match self.otp_repo.invalidate_otp(&payload.code, &payload.email).await {
-            Ok(rows_affected) => {
-                log::info!("Invalidating OTP: {:?} rows affected.", rows_affected);
-                Ok(rows_affected)
+        match self
+            .otp_repo
+            .invalidate_otp(&payload.code, &payload.email)
+            .await
+        {
+            Ok(rows_affected) => Ok(rows_affected),
+            Err(e) => {
+                log::error!("auth_service failed to invalidate otp. \n{}", e.to_string());
+                Err(Error::other(e.to_string()))
+            }
+        }
+    }
+
+    pub async fn refresh_access_token(
+        &self,
+        refresh_token: &str,
+    ) -> Result<RefreshResponse, AppError> {
+        match self
+            .rt_repo
+            .get_refresh_token(&refresh_token.to_string())
+            .await
+        {
+            Ok(result) => match result {
+                Some(session) => {
+                    log::info!(
+                        "auth_service: refresh token found for user:{}",
+                        session.user_id
+                    );
+                    if session.expires_at < Utc::now() {
+                        return Err(AppError::SessionExpired);
+                    }
+                    let access_token = self.generate_access_token(&session.user_id)?;
+
+                    Ok(RefreshResponse { access_token })
+                }
+                None => {
+                    log::error!("auth_service: refresh token not found");
+                    Err(AppError::TokenNotFound)
+                }
             },
             Err(e) => {
-                log::error!("Error: {}", e);
-                Err(Error::other(e.to_string()))
+                log::error!("auth_service: internal server error. \n{}", e.to_string());
+                Err(AppError::InternalServerError(
+                    "Unexpect error occurred".to_string(),
+                ))
             }
         }
     }

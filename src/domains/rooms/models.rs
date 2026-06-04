@@ -10,7 +10,20 @@ pub struct Room {
     pub subject: String,
     pub grade: i32,
     pub category: String,
-    pub participant_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub participant_count: Option<i32>,
+    pub is_live: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct RoomRecord {
+    pub id: String,
+    pub name: String,
+    pub subject: String,
+    pub grade: i32,
+    pub category: String,
     pub is_live: bool,
     pub created_at: DateTime<Utc>,
 }

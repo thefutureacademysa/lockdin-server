@@ -28,11 +28,12 @@ impl RefreshTokenRepo for RefreshTokenPostgresRepo {
     }
 
     async fn get_refresh_token(&self, rt: &String) -> sqlx::Result<Option<RefreshToken>, Error> {
-        let token = sqlx::query_as("SELECT token FROM refresh_tokens WHERE token = $1")
+        log::info!("auth_repo: getting refresh token for user");
+        let token = sqlx::query_as("SELECT *  FROM refresh_tokens WHERE token = $1")
             .bind(rt)
             .fetch_optional(&self.pool)
             .await?;
-        
+
         Ok(token)
     }
 

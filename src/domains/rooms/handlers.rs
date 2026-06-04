@@ -1,8 +1,8 @@
 use crate::config::state::AppState;
-use crate::domains::auth::error::AppError;
+use crate::infra::errors::handle_auth_error;
 use crate::infra::middleware::auth::middleware;
 use actix_web::web::{Data, Query};
-use actix_web::{HttpRequest, HttpResponse, get};
+use actix_web::{HttpRequest, HttpResponse, get, post, web};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -42,60 +42,80 @@ pub async fn get_rooms(
                 }
             }
         }
-        Err(e) => match e {
-            AppError::InternalServerError(msg) => {
-                log::error!("Middleware auth error: {}", msg);
-                Err(actix_web::error::ErrorInternalServerError(
-                    serde_json::json!({
-                        "error": "InternalServerError",
-                        "message": msg
-                    })
-                    .to_string(),
-                ))
+        Err(e) => handle_auth_error(e),
+    }
+}
+
+#[post("/{room_id}/join")]
+pub async fn join_room(
+    state: Data<AppState>,
+    req: HttpRequest,
+    room_id: web::Path<String>,
+) -> actix_web::Result<HttpResponse> {
+    match middleware(req).await {
+        Ok(claims) => {
+            log::info!("User {} requested to join room {}", claims.sub, room_id);
+            match state
+                .rooms_service
+                .join_room(room_id.into_inner().as_str(), claims.sub.as_str())
+                .await
+            {
+                Ok(result) => Ok(HttpResponse::Ok().json(result)),
+                Err(e) => {
+                    log::error!("Error: {}", e);
+                    Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+                }
             }
-            AppError::TokenExpired => {
-                log::warn!("Middleware auth error: Token expired");
-                Err(actix_web::error::ErrorUnauthorized(
-                    serde_json::json!({
-                        "error": "TokenExpired",
-                        "message": "Access token has expired. Please refresh."
-                    })
-                    .to_string(),
-                ))
+        }
+        Err(e) => handle_auth_error(e),
+    }
+}
+
+#[post("/{room_id}/leave")]
+pub async fn leave_room(
+    state: Data<AppState>,
+    req: HttpRequest,
+    room_id: web::Path<String>,
+) -> actix_web::Result<HttpResponse> {
+    match middleware(req).await {
+        Ok(claims) => {
+            log::info!("User {} requested to leave room {}", claims.sub, room_id);
+            match state
+                .rooms_service
+                .leave_room(room_id.into_inner().as_str(), claims.sub.as_str())
+                .await
+            {
+                Ok(result) => Ok(HttpResponse::Ok().json(result)),
+                Err(e) => {
+                    log::error!("Error: {}", e);
+                    Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+                }
             }
-            AppError::InvalidToken => {
-                log::warn!("Middleware auth error: Invalid token");
-                Err(actix_web::error::ErrorUnauthorized(
-                    serde_json::json!({
-                        "error": "InvalidToken",
-                        "message": "Access token is invalid."
-                    })
-                    .to_string(),
-                ))
+        }
+        Err(e) => handle_auth_error(e),
+    }
+}
+
+#[get("/{room_id}/participants")]
+pub async fn participants(
+    state: Data<AppState>,
+    req: HttpRequest,
+    room_id: web::Path<String>,
+) -> actix_web::Result<HttpResponse> {
+    match middleware(req).await {
+        Ok(claims) => {
+            match state
+                .rooms_service
+                .participants(room_id.into_inner().as_str())
+                .await
+            {
+                Ok(result) => Ok(HttpResponse::Ok().json(result)),
+                Err(e) => {
+                    log::error!("POST /rooms/participants - Internal Server Error");
+                    Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+                }
             }
-            AppError::TokenNotFound => {
-                log::warn!("Middleware auth error: Token not found");
-                Err(actix_web::error::ErrorUnauthorized(serde_json::json!({
-                "error": "TokenNotFound",
-                "message": "Access token not found."
-                    })))
-            }
-            AppError::AuthorizationHeaderNotFound => {
-                log::warn!("Middleware auth error: Authorization header not found");
-                Err(actix_web::error::ErrorUnauthorized(serde_json::json!({
-                "error": "AuthorizationHeaderNotFound",
-                "message": "Authorization header not found."
-                    })))
-            }
-            _ => {
-                log::error!("Middleware auth error: {}", e);
-                Err(actix_web::error::ErrorInternalServerError(
-                    serde_json::json!({
-                    "error": "InternalServerError",
-                    "message": "An unexpected error occurred."
-                        }),
-                ))
-            }
-        },
+        }
+        Err(e) => handle_auth_error(e),
     }
 }

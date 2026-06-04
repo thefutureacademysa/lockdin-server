@@ -1,4 +1,4 @@
-use crate::domains::rooms::models::{Room, SubjectCategory};
+use crate::domains::rooms::models::{Room, RoomRecord, SubjectCategory};
 use crate::domains::rooms::repository::RoomRepository;
 use sqlx::Error;
 
@@ -13,7 +13,7 @@ impl RoomRepository for PostgresRoomRepository {
         search: Option<String>,
         grade: Option<i32>,
         category: Option<SubjectCategory>,
-    ) -> Result<Vec<Room>, Error> {
+    ) -> Result<Vec<RoomRecord>, Error> {
         let mut query = String::from("SELECT * FROM rooms WHERE 1=1");
         let mut param_count = 0;
 
@@ -39,9 +39,8 @@ impl RoomRepository for PostgresRoomRepository {
             ));
         }
 
-        query.push_str(" ORDER BY participant_count DESC");
 
-        let mut sql_query = sqlx::query_as::<_, Room>(&query);
+        let mut sql_query = sqlx::query_as(&query);
 
         if let Some(g) = grade {
             sql_query = sql_query.bind(g);

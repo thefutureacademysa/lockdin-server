@@ -12,6 +12,7 @@ pub enum AppError {
     InvalidToken,
     TokenNotFound,
     AuthorizationHeaderNotFound,
+    SessionExpired,
 }
 
 #[derive(Serialize)]
@@ -30,6 +31,7 @@ impl fmt::Display for AppError {
             AppError::InvalidToken => write!(f, "Invalid token"),
             AppError::TokenNotFound => write!(f, "Token not found"),
             AppError::AuthorizationHeaderNotFound => write!(f, "Authorization header not found"),
+            AppError::SessionExpired => write!(f, "Session has expired"),
         }
     }
 }
@@ -45,6 +47,7 @@ impl ResponseError for AppError {
             AppError::InvalidToken => StatusCode::UNAUTHORIZED,
             AppError::TokenNotFound => StatusCode::UNAUTHORIZED,
             AppError::AuthorizationHeaderNotFound => StatusCode::UNAUTHORIZED,
+            AppError::SessionExpired => StatusCode::UNAUTHORIZED,
         }
     }
 
@@ -77,6 +80,9 @@ impl ResponseError for AppError {
                 HttpResponse::Unauthorized().json(response)
             }
             AppError::AuthorizationHeaderNotFound => {
+                HttpResponse::Unauthorized().json(response)
+            }
+            AppError::SessionExpired => {
                 HttpResponse::Unauthorized().json(response)
             }
         }

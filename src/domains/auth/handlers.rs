@@ -1,6 +1,8 @@
 use actix_web::{post, web, HttpResponse};
 use crate::config::state::AppState;
-use crate::domains::auth::models::{LoginRequest, SignupRequest, VerifyOtpRequest};
+use crate::domains::auth::error::AppError;
+use crate::domains::auth::models::{LoginRequest, RefreshRequest, RefreshResponse, SignupRequest, VerifyOtpRequest};
+use crate::domains::auth::service::AuthService;
 
 // signup
 // login
@@ -56,6 +58,25 @@ pub async fn verify_otp(
         }
         Err(e) => {
             log::error!("Error: {}", e);
+            Ok(HttpResponse::from_error(actix_web::Error::from(e)))
+        }
+    }
+}
+
+#[post("/refresh")]
+pub async fn refresh_token(
+    state: web::Data<AppState>,
+    payload: web::Json<RefreshRequest>,
+) -> actix_web::Result<HttpResponse> {
+    match state.auth_service
+        .refresh_access_token(&payload.refresh_token)
+        .await {
+        Ok(access_token) => {
+            log::info!("POST /auth/refresh  - access token refreshed successfully.");
+            Ok(HttpResponse::Ok().json(access_token))
+        },
+        Err(e) => {
+            log::error!("POST /auth/refresh - failed refreshing access token. \n{}", e);
             Ok(HttpResponse::from_error(actix_web::Error::from(e)))
         }
     }

@@ -24,6 +24,7 @@ impl NotificationService {
 
     /// Send email.
     pub async fn send_email(from: String, to: Vec<String>, subject: String, body: String) -> Result<(), String> {
+        log::info!("notification_service: sending email verification code");
         let resend_api_key = std::env::var("RESEND_API_KEY").expect("RESEND_API_KEY environment variable is required");
         let resend  = Resend::new(&resend_api_key);
 
@@ -35,7 +36,7 @@ impl NotificationService {
                 Ok(())
             }
             Err(e) => {
-                println!("{:?}", e);
+                log::error!("notification_service: failed to send email \n{}", e.to_string());
                 Err(e.to_string())
             }
         }
