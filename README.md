@@ -80,7 +80,7 @@ Lockdin follows a clean layered architecture across both the backend and mobile 
 
 ## Tech Stack
 
-### Backend — Rust [Lockdin Server](https://github.com/thefutureacademysa/lockdin-server)
+### Backend — Rust
 | Technology | Purpose |
 |---|---|
 | Actix-web | High-performance async web framework |
