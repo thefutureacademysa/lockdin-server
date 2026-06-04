@@ -18,7 +18,6 @@ The mechanism is simple. Accountability through presence.
   - [Prerequisites](#prerequisites)
   - [Environment Variables](#environment-variables)
   - [Running the Backend](#running-the-backend)
-  - [Running the Mobile App](#running-the-mobile-app)
 - [API Reference](#api-reference)
 - [Database](#database)
 - [Caching Strategy](#caching-strategy)
