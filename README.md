@@ -6,6 +6,8 @@ Lockdin is a free, mobile-first live study accountability platform built specifi
 
 The mechanism is simple. Accountability through presence.
 
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
